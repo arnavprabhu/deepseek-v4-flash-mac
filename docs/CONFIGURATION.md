@@ -41,6 +41,13 @@ All values below are the tested set (M5 Pro, 64 GB). They live in [`configs/pres
 | `GGML_METAL_DS41_Q5K` | 1 | Use the DS41 Q5_K mat-vec kernels. |
 | `GGML_METAL_DS41_IQ` | 1 | Use the DS41 IQ1_M / IQ2_XXS / IQ2_XS mat-vec kernels for experts. |
 | `LLAMA_SERVER_CKPT_STEP` | 4096 | Server prompt-cache checkpoint spacing in tokens. |
+| `LLAMA_DSV41_PROMPT_SKIP` | 1 | Long prompts (>= 16K new tokens in the server) skip the upper layers for rows no later layer reads; exact for the kept rows (v12). |
+| `LLAMA_DSV41_ENGRAM_PREAD` | 32 | Prefill gathers Engram rows with this many `pread` threads instead of per-row readahead on the main thread (v13). |
+| `LLAMA_DSV41_MOE_SEED_STAGE` | 48 | After a prompt, copy up to this many of each layer's most used experts from the prefill staging buffers into the arena (no SSD read), so the first decode tokens hit the cache (v13). |
+| `LLAMA_DSV41_STAGE_WIDEN` | 1 | Prefill staging reads whole 16 KiB pages through an uncached file handle (keeps the page cache free, aligned reads) (v13). |
+| `LLAMA_DSV41_STAGE_UNION` | 2 | Prefill staging reads only the experts predicted for the next layer (previous ubatch's selection) and fetches the few it missed; 1 = also use the current layer's selection, 0 = full tensors (v13). |
+| `LLAMA_DSV41_MOE_OVERLAP_NT` | 1 | Extend the decode miss overlap to 2-16 token batches (speculative-decoding verification) (v13). |
+| `LLAMA_DSV41_MOE_TOKSTATS`, `LLAMA_DSV41_STAGE_STATS`, `LLAMA_DSV41_ENGRAM_STATS` | 0 | Diagnostics: per-token arena hit/miss lines, staging union statistics, Engram gather timing. |
 | `LLAMA_DSV41_ENGRAM_FILE` | (auto) | Path to the Engram sidecar if it is not next to shard 1. |
 
 ## Command-line flags

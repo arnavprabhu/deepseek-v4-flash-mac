@@ -14,11 +14,29 @@ All numbers: **Apple M5 Pro (6P+12E CPU, 20-core GPU), 64 GB, macOS 27, internal
 | Prefill expert staging | 214.5 (pp8192) | ~9.7 (tg2048) | lossless |
 | Sparse prefill attention on the matrix units | 272.4 (pp8192, in that A/B run) | n/a | numeric: 8K-ctx KLD 4.6e-4 |
 | Lazy arena + F_NOCACHE fills | n/a | +5% (tg2048) | less RAM during prefill |
-| Decode miss overlap, DS41 mat-vec kernels, LFU-decay eviction, profile seeding, 36 GiB arena (baseline-v8) | 252 (pp4096), ~215-222 (pp8192) | **16.3 (tg2048)** | current |
+| Decode miss overlap, DS41 mat-vec kernels, LFU-decay eviction, profile seeding, 36 GiB arena (baseline-v8) | 252 (pp4096), ~215-222 (pp8192) | 16.3 (tg2048) | |
+| v11 decode kernels, sparse attention v2, auto arena, speculation (baseline-v11) | ~283 (pp4096) | 15.9-16.1 (tg128) | |
+| Long-prompt layer skip (baseline-v12) | 302 (pp32768, was 222) | ~16 (tg128) | 128K TTFT 9.45 -> 5.6 min |
+| Engram pread, arena seeding, aligned + predicted-union staging, verify-batch overlap (baseline-v13) | **348-349 (pp8192)** | **16.3-16.6 (tg128)** | 128K TTFT **4.0 min**; current |
 
 Intermediate rows were measured on earlier builds and different test shapes (pp512, pp4096, pp8192), so only compare rows with the same test length. The 272.4 figure was measured at that milestone against a 207.6 control in the same session (+31%); later single runs of the current build at pp8192 land at ~215-222, so run-to-run and session-to-session variation is substantial.
 
-## Current build in detail (baseline-v11, runtime 604d11ff9)
+## Current build in detail (baseline-v13, runtime 7fec31c78)
+
+Same binary, same session, v12 settings vs v13 settings:
+
+| Test | v12 | v13 |
+|---|---|---|
+| pp8192 (2 runs) | 298 / 289 tok/s | **349 / 348 tok/s** (page-ins 12.7M -> 0.4M) |
+| pp4096 (2 runs) | 196 / 213 | 254 / 218 (page-cache dependent) |
+| tg128 (2 runs) | 16.6 / 16.4 | 16.6 / 16.3 |
+| 119K-token prompt, time to first token | 5.56 min (357 tok/s) | **4.01 min (495 tok/s)**, needle retrieved, no swap, peak RSS 39.9 GB |
+| First 8 decode tokens after a 4K prompt on a fresh server | 52% arena hit, 1216 MiB/token from SSD | 72% hit, 722 MiB/token |
+| Real-text decode with n-gram speculation (copy/edit + chat mix) | 15.8 tok/s | 17.0-17.2 tok/s, identical greedy output |
+
+What changed in v13: the Engram rows of a prompt are gathered by 32 `pread` threads (was 1.7-3.3 s of single-threaded readahead per 4096-token batch); after a prompt the most used experts are copied from the prefill staging buffers into the arena; prefill staging uses aligned uncached reads and reads only the experts it predicts (at 4096-token batches only ~59% of each layer's experts are used); the decode miss overlap also covers speculative verification batches. v12 added the long-prompt layer skip (exact for the rows the model reads).
+
+### Previous build (baseline-v11, runtime 604d11ff9)
 
 Fast bench (`llama-bench` pp4096 + tg128 x3, drop first), run one job at a time:
 
@@ -45,6 +63,8 @@ Tried and dropped: long-prompt layer skip (no A/B gain), wider expert GEMM tiles
 
 Compared with the CPU reference implementation of the same quantized model: KLD 0.0028, same top-p 97.45%, perplexity within 0.07%, 24/24 task outputs (numeric gates re-run on v10 and v11: greedy goldens byte-identical, KL gate pass). The quantization itself is about KLD 0.17 versus the original unquantized model (ISTA-DASLab's choice for IQ2_XXS). Some optimizations in the history are bit-exact, others are within a numeric tolerance; the final gates were of the numeric kind.
 
+
+New in v13: an 8K-context check (8192-token prompt plus 64 teacher-forced decode steps). The prompt logits match the CPU reference to KLD ~3e-6, but the decode steps sit at KLD ~0.01 (top-1 agreement ~94%) on v12 and v13 alike, and repeated identical runs of the GPU build differ by up to KLD ~0.002 at those steps. Turning off the decode kernels, the sparse prefill attention, staging, or using 512-token batches does not remove it. This predates v13 and is under investigation; every v13 change was checked to leave the 8K prompt logits bit-identical.
 ## Methodology
 
 - `llama-bench`, one repetition after its built-in warm-up; prefill = `-p N`, decode = `-n N`.
