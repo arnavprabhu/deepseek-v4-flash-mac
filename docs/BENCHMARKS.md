@@ -63,8 +63,8 @@ Tried and dropped: long-prompt layer skip (no A/B gain), wider expert GEMM tiles
 
 Compared with the CPU reference implementation of the same quantized model: KLD 0.0028, same top-p 97.45%, perplexity within 0.07%, 24/24 task outputs (numeric gates re-run on v10 and v11: greedy goldens byte-identical, KL gate pass). The quantization itself is about KLD 0.17 versus the original unquantized model (ISTA-DASLab's choice for IQ2_XXS). Some optimizations in the history are bit-exact, others are within a numeric tolerance; the final gates were of the numeric kind.
 
-
 New in v13: an 8K-context check (8192-token prompt plus 64 teacher-forced decode steps). The prompt logits match the CPU reference to KLD ~3e-6, but the decode steps sit at KLD ~0.01 (top-1 agreement ~94%) on v12 and v13 alike, and repeated identical runs of the GPU build differ by up to KLD ~0.002 at those steps. Turning off the decode kernels, the sparse prefill attention, staging, or using 512-token batches does not remove it. This predates v13 and is under investigation; every v13 change was checked to leave the 8K prompt logits bit-identical.
+
 ## Methodology
 
 - `llama-bench`, one repetition after its built-in warm-up; prefill = `-p N`, decode = `-n N`.
