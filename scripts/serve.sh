@@ -17,6 +17,7 @@ exec "$BIN_DIR/llama-server" \
   -m "$MODEL_FILE" \
   "${BASE_ARGS[@]}" \
   -ub 4096 -b 4096 --checkpoint-min-step 4096 \
+  --spec-type ngram-mod --spec-ngram-mod-n-match 8 --spec-ngram-mod-n-min 2 --spec-ngram-mod-n-max 8 \
   -c "${DS41_CTX:-131072}" \
   -rea on --reasoning-effort 50 --temp 1.0 --top-p 1.0 --top-k 0 --min-p 0 \
   --host "${DS41_HOST:-127.0.0.1}" --port "${DS41_PORT:-8080}" \

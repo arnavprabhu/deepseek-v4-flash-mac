@@ -19,7 +19,7 @@ All values below are the tested set (M5 Pro, 64 GB). They live in [`configs/pres
 
 | Variable | Value | In plain words |
 |---|---|---|
-| `LLAMA_DSV41_MOE_CACHE_MIB` | 36864 | Size of the GPU-visible expert arena in MiB (36 GiB). The main memory/speed knob. Allocated lazily. |
+| `LLAMA_DSV41_MOE_CACHE_MIB` | auto | Size of the GPU-visible expert arena in MiB, or `auto`: 90% of RAM minus weights, KV for the actual context, compute buffers and a margin (`LLAMA_DSV41_MOE_RAM_FRAC`, `_MARGIN_MIB`, `_CACHE_MIN_MIB`, `_CACHE_MAX_MIB`). Metal wires the whole arena at allocation, so a fixed size that is too big swaps at long context. |
 | `LLAMA_DSV41_MOE_EVICT` | `lfu-decay` | When the arena is full, evict the least frequently used expert, with counts decaying over time. Default is `lru`. |
 | `LLAMA_DSV41_MOE_SEED_PROFILE` | `data/profile-2.00.bin` | Optional file of expert-usage counts that pre-ranks which experts to keep. Without it the arena starts cold. Profile from [Strata](https://github.com/Niko1221/Strata). |
 | `LLAMA_DSV41_MOE_FILL_NOCACHE` | 1 | Arena fills bypass the OS page cache (F_NOCACHE), so experts are not stored twice in RAM. |
@@ -33,7 +33,11 @@ All values below are the tested set (M5 Pro, 64 GB). They live in [`configs/pres
 | `LLAMA_DSV41_STAGE_THREADS` | 16 | Reader threads for prefill staging. |
 | `LLAMA_DSV41_UPLOAD_THREADS` | 16 | Reader threads for decode-time expert reads. |
 | `LLAMA_DSV41_UPLOAD_CHUNK_KIB` | 1024 | Size of each read job in KiB. |
-| `GGML_METAL_DSV4_SATTN` | 1 | Use the custom sparse prefill attention kernel (matrix units). |
+| `GGML_METAL_DSV4_SATTN` | 2 | Sparse prefill attention: 2 = tensor-API kernel on the M5 matrix units (~4.8x faster), 1 = older kernel. |
+| `LLAMA_DSV41_MOE_PREDICT`, `_PF_N`, `_PREDICT_K` | 2, 4, 8 | Predict the next layer's experts and read misses early. |
+| `LLAMA_DSV41_PREFILL_ARENA` | 1 | Prefill copies resident experts from the arena instead of the SSD. |
+| `GGML_METAL_DS41_IQ1M`, `_FUSE`, `_IDXW` | 1 | v11 decode kernels: IQ1_M experts, fused small ops, sparse index-list builder. |
+| `LLAMA_SPEC_CTRL` | 1 | Server: cost-aware draft length for n-gram speculation (`serve.sh` enables ngram-mod). |
 | `GGML_METAL_DS41_Q5K` | 1 | Use the DS41 Q5_K mat-vec kernels. |
 | `GGML_METAL_DS41_IQ` | 1 | Use the DS41 IQ1_M / IQ2_XXS / IQ2_XS mat-vec kernels for experts. |
 | `LLAMA_SERVER_CKPT_STEP` | 4096 | Server prompt-cache checkpoint spacing in tokens. |

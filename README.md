@@ -17,14 +17,15 @@ Measured on one machine: **Apple M5 Pro (6P + 12E CPU, 20-core GPU), 64 GB unifi
 
 | Metric | First working runtime | Now |
 |---|---|---|
-| Prefill | 5.7 tok/s (pp512) | **252 tok/s** (pp4096); ~215-222 (pp8192); 222 (pp16384); 210 (pp32768) |
-| Decode | 3.3 tok/s | **16.3 tok/s** (tg2048); 14.9 (tg512) |
+| Prefill | 5.7 tok/s (pp512) | **~283 tok/s** (pp4096, mean of 4 runs, range 268-295) |
+| Decode | 3.3 tok/s | **~16 tok/s** (tg128, 15.9-16.1); 17-20 tok/s on copy/edit prompts with the server's n-gram speculation |
 | 4 parallel sequences | n/a | 26.3 tok/s aggregate |
-| 119K-token prompt (128K context) | n/a | 10.5 min to first token, needle retrieved (18.9 min on an earlier build) |
+| 119K-token prompt (128K context) | n/a | 9.45 min to first token, needle retrieved, no swap (measured on the arena auto-size build; not re-run on v11) |
 | 9.1K-token prompt, first token | n/a | 57.8 s cold, **0.61 s** with the prefix cached |
-| Memory | | peak RSS ~46.6 GB with a 36 GiB arena, no swap |
+| Short prompts (100-1000 tokens), warm server | n/a | 30-45% faster first token (experts reused from the arena) |
+| Memory | | expert arena sized automatically from context length (~38 GiB at 8K, ~26 GiB at 128K) |
 
-Quality versus the CPU reference implementation: KLD 0.0028, same top-p 97.45%, perplexity within 0.07%, 24/24 task outputs (full gates last run on the previous build, v7; the current build has passed the quick greedy-output and 128K server checks, full gates pending). The 2-bit quantization itself sits at KLD ~0.17 versus the original model; that is the cost of IQ2_XXS, chosen by ISTA-DASLab. Details in [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
+Quality versus the CPU reference implementation: KLD 0.0028, same top-p 97.45%, perplexity within 0.07%, 24/24 task outputs (numeric gates on the current build, v11: greedy goldens byte-identical, KL gate pass). The 2-bit quantization itself sits at KLD ~0.17 versus the original model; that is the cost of IQ2_XXS, chosen by ISTA-DASLab. Details in [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
 
 ## Requirements
 

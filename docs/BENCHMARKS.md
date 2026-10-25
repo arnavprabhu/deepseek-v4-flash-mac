@@ -18,22 +18,32 @@ All numbers: **Apple M5 Pro (6P+12E CPU, 20-core GPU), 64 GB, macOS 27, internal
 
 Intermediate rows were measured on earlier builds and different test shapes (pp512, pp4096, pp8192), so only compare rows with the same test length. The 272.4 figure was measured at that milestone against a 207.6 control in the same session (+31%); later single runs of the current build at pp8192 land at ~215-222, so run-to-run and session-to-session variation is substantial.
 
-## Current build in detail (baseline-v8)
+## Current build in detail (baseline-v11, runtime 604d11ff9)
+
+Fast bench (`llama-bench` pp4096 + tg128 x3, drop first), run one job at a time:
+
+| Test | Result |
+|---|---|
+| pp4096 | ~283 tok/s (four interleaved runs 281-284 vs 279-295 on v10: no change) |
+| tg128 | 15.9-16.1 tok/s (+2-3% vs v10 in interleaved A/B) |
+| 119K-token prompt, time to first token | 9.45 min, needle retrieved, swap unchanged (arena auto-size build, before the v11 kernels) |
+| Short prompts on a warm server (97 / 403 / 916 tokens) | 2.3-2.8 / 4.4-5.5 / 6.9-7.0 s, vs 3.9-4.4 / 6.7-8.9 / 9.3-10.1 s without arena reuse |
+| Server speculation (ngram-mod, n_max 8) | copy/edit prompts 17-20 tok/s vs ~11 plain; chat unchanged; 22.8K-token prompts +10-18% |
+
+What changed since v8: tensor-API sparse prefill attention (`GGML_METAL_DSV4_SATTN=2`), arena auto-size (`LLAMA_DSV41_MOE_CACHE_MIB=auto`, fixes swapping at 128K), next-layer expert look-ahead prefetch, prefill reads from the arena, n-gram speculation with in-graph rollback and a cost controller, a table-free IQ1_M decode kernel, decode op fusions and a faster sparse index-list builder for long-context decode.
+Tried and dropped: long-prompt layer skip (no A/B gain), wider expert GEMM tiles (slower), CPU/staging thread changes (no gain).
+
+### Previous build (baseline-v8)
 
 | Test | Result |
 |---|---|
 | pp1024 / pp4096 / pp16384 / pp32768 | 96.1 / 251.9 / 222.1 / 210.4 tok/s |
 | tg512 / tg2048 | 14.9 / 16.3 tok/s |
 | Batched decode, 512 prompt + 128 gen, 1/2/4/8 sequences | 13.6 / 18.9 / 26.3 / 23.4 tok/s aggregate |
-| 119K-token prompt, time to first token | 10.5 min (188.6 tok/s); needle retrieved; no swap |
-| 9.1K-token prompt, cold / prefix cached | 57.8 s / 0.61 s, byte-identical output |
-| Peak RSS (36 GiB arena) | ~46.6 GB, no swap |
-
-Arena sweep (tg2048): see [CONFIGURATION.md](CONFIGURATION.md#ram-presets).
 
 ## Quality
 
-Compared with the CPU reference implementation of the same quantized model: KLD 0.0028, same top-p 97.45%, perplexity within 0.07%, 24/24 task outputs (full gates last run on the previous build, v7; the current build has passed the quick greedy-output and 128K server checks, full gates pending). The quantization itself is about KLD 0.17 versus the original unquantized model (ISTA-DASLab's choice for IQ2_XXS). Some optimizations in the history are bit-exact, others are within a numeric tolerance; the final gates were of the numeric kind.
+Compared with the CPU reference implementation of the same quantized model: KLD 0.0028, same top-p 97.45%, perplexity within 0.07%, 24/24 task outputs (numeric gates re-run on v10 and v11: greedy goldens byte-identical, KL gate pass). The quantization itself is about KLD 0.17 versus the original unquantized model (ISTA-DASLab's choice for IQ2_XXS). Some optimizations in the history are bit-exact, others are within a numeric tolerance; the final gates were of the numeric kind.
 
 ## Methodology
 
