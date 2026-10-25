@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 330" width="720" height="330" role="img" aria-labelledby="t d">
+  <title id="t">First working runtime versus current runtime</title>
+  <desc id="d">Prefill went from 5.7 to 252 tokens per second and decode from 3.3 to 16.3 tokens per second on an Apple M5 Pro with 64 GB.</desc>
+  <style>
+    :root { --bg:#ffffff; --fg:#1f2328; --mute:#656d76; --start:#9aa4af; --now:#0969da; --grid:#d0d7de; }
+    @media (prefers-color-scheme: dark) { :root { --bg:#0d1117; --fg:#e6edf3; --mute:#8b949e; --start:#6e7681; --now:#58a6ff; --grid:#30363d; } }
+    .bg{fill:var(--bg)} text{fill:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+    .h{font-size:16px;font-weight:600} .l{font-size:13px} .m{font-size:12px;fill:var(--mute)} .v{font-size:13px;font-weight:600}
+    .s{fill:var(--start)} .n{fill:var(--now)} .g{stroke:var(--grid);stroke-width:1}
+  </style>
+  <rect class="bg" width="720" height="330" rx="8"/>
+  <text class="h" x="24" y="32">From first working runtime to now (Apple M5 Pro, 64 GB)</text>
+
+  <text class="l" x="24" y="72">Prefill (tokens/s)</text>
+  <line class="g" x1="150" y1="60" x2="150" y2="150"/>
+  <rect class="s" x="150" y="68" width="10.9" height="26" rx="3"/>
+  <text class="v" x="170" y="86">5.7</text>
+  <text class="m" x="204" y="86">start, pp512</text>
+  <rect class="n" x="150" y="104" width="480" height="26" rx="3"/>
+  <text class="v" x="638" y="122" style="font-size:13px">252</text>
+  <text class="m" x="24" y="122">now, pp4096 (44x)</text>
+
+  <text class="l" x="24" y="192">Decode (tokens/s)</text>
+  <line class="g" x1="150" y1="180" x2="150" y2="270"/>
+  <rect class="s" x="150" y="188" width="97" height="26" rx="3"/>
+  <text class="v" x="257" y="206">3.3</text>
+  <text class="m" x="290" y="206">start, tg64</text>
+  <rect class="n" x="150" y="224" width="480" height="26" rx="3"/>
+  <text class="v" x="638" y="242">16.3</text>
+  <text class="m" x="24" y="242">now, tg2048 (4.9x)</text>
+
+  <text class="m" x="24" y="300">Single runs on one machine. Prefill bars share one scale, decode bars share another.</text>
+  <text class="m" x="24" y="318">Start = experts on CPU via mmap. Now = baseline-v8. Different test lengths; see docs/BENCHMARKS.md.</text>
+</svg>

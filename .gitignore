@@ -1,0 +1,10 @@
+# Models and downloads (hundreds of GB)
+models/
+*.gguf
+# Runtime checkout and build output (created by scripts/setup.sh)
+runtime/
+build/
+data/
+# Misc
+.DS_Store
+*.log
