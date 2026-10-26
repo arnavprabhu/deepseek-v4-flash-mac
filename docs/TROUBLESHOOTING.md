@@ -59,7 +59,12 @@ console with `MODEL_PORT=8081 npm run dev`. The console page itself uses port 31
 
 ## "reasoning_effort must be an integer in [1, 100] or low/high/max" (HTTP 500)
 
-The model's chat template only accepts an effort of 1-100 or `low`/`high`/`max`; OpenAI-style clients also send
-`minimal`, `medium`, `xhigh` or `none`. Point the client at the console (`http://127.0.0.1:3141/v1`): it translates
-those (`minimal` 25, `medium` 60, `xhigh` 90, `none` 1). When talking to `llama-server` directly on port 8080, send a
-number or `low`/`high`/`max`.
+Fixed in runtime `26bb6a404`: the server maps `minimal` to low, `medium` to the template default and `xhigh` to max.
+On an older runtime, rerun `scripts/setup.sh`, or send a number 1-100 or `low`/`high`/`max`. The console also
+translates these words (`minimal` 25, `medium` 60, `xhigh` 90, `none` 1) before they reach the server.
+
+## Agent prints `<｜DSML｜ calls>` / `<｜DSML｜ invoke ...>` text instead of running tools
+
+The model writes tool calls in DeepSeek V4.1 markup while its chat template uses the older V4 tag names; runtimes
+before `26bb6a404` only parsed the template's spelling, so the calls came back as plain text. Rerun
+`scripts/setup.sh` to build the pinned runtime, then restart the model.

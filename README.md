@@ -112,4 +112,4 @@ No Strata or Splash code is in the runtime except the seed profile data file, wh
 
 Scripts and docs in this repo: MIT, see [LICENSE](LICENSE). The runtime fork keeps llama.cpp's MIT license. The model is under its own license; check the [model page](https://huggingface.co/ISTA-DASLab/DeepSeek-V4.1-Flash-1017-GSQ-RCO-GGUF).
 
-Runtime source: [arnavprabhu/ds41-metal-runtime](https://github.com/arnavprabhu/ds41-metal-runtime), branch `ista-metal`, pinned at commit `2511af313` (baseline-v14).
+Runtime source: [arnavprabhu/ds41-metal-runtime](https://github.com/arnavprabhu/ds41-metal-runtime), branch `ista-metal`, pinned at commit `26bb6a404` (baseline-v14 + tool-call parsing fix).
