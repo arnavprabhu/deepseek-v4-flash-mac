@@ -429,7 +429,61 @@ function proxy(req, res) {
     res.writeHead(503, { 'content-type': 'application/json', ...CORS });
     return res.end(JSON.stringify({ error: { message: msg, type: 'unavailable', code: 503 } }));
   }
+  if (req.method === 'POST' && REWRITE_PATHS.has(new URL(req.url, 'http://x').pathname)) {
+    // buffer the JSON body so the reasoning effort can be normalized for the model's chat template
+    const chunks = [];
+    let size = 0;
+    req.on('data', (d) => { chunks.push(d); size += d.length; });
+    req.on('end', () => {
+      let body = Buffer.concat(chunks, size);
+      try {
+        const j = JSON.parse(body.toString('utf8'));
+        if (normalizeEffort(j)) body = Buffer.from(JSON.stringify(j));
+      } catch {} // not JSON: forward unchanged, the server reports the error
+      forward(req, res, body);
+    });
+    return;
+  }
+  forward(req, res, null);
+}
+
+// The DS41 chat template accepts reasoning_effort = integer 1..100 or low/high/max (low 50, high 75, max 100) and
+// raises on anything else, which llama-server returns as a 500. OpenAI clients send minimal/medium/xhigh too.
+const REWRITE_PATHS = new Set(['/v1/chat/completions', '/v1/responses', '/v1/completions', '/v1/messages']);
+const EFFORT_MAP = { minimal: '25', medium: '60', xhigh: '90', min: '25', med: '60', mid: '60', default: null, auto: null };
+
+function effortValue(v) {
+  if (v === null || v === undefined) return { drop: true };
+  if (typeof v === 'number' && Number.isFinite(v)) return { value: String(Math.min(100, Math.max(1, Math.round(v)))) };
+  if (typeof v !== 'string') return { drop: true };
+  const w = v.trim().toLowerCase();
+  if (w === 'none' || w === 'off') return { value: '1' }; // the server's "none" leaves raw <think> text in the reply
+  if (w === 'low' || w === 'high' || w === 'max') return { value: w };
+  if (/^\d+(\.\d+)?$/.test(w)) return { value: String(Math.min(100, Math.max(1, Math.round(Number(w))))) };
+  if (w in EFFORT_MAP) return EFFORT_MAP[w] === null ? { drop: true } : { value: EFFORT_MAP[w] };
+  return { drop: true }; // unknown word: use the server default
+}
+
+function normalizeEffort(j) {
+  let changed = false;
+  const fix = (obj, key) => {
+    if (!obj || typeof obj !== 'object' || !(key in obj)) return;
+    const r = effortValue(obj[key]);
+    if (r.drop) { delete obj[key]; changed = true; return; }
+    if (obj[key] !== r.value) { obj[key] = r.value; changed = true; }
+  };
+  fix(j, 'reasoning_effort');
+  if (j.reasoning && typeof j.reasoning === 'object') fix(j.reasoning, 'effort');
+  if (j.chat_template_kwargs && typeof j.chat_template_kwargs === 'object') fix(j.chat_template_kwargs, 'reasoning_effort');
+  return changed;
+}
+
+function forward(req, res, body) {
   const headers = { ...req.headers, host: `127.0.0.1:${MODEL_PORT}` };
+  if (body) {
+    headers['content-length'] = String(body.length);
+    delete headers['transfer-encoding'];
+  }
   const up = http.request({ host: '127.0.0.1', port: MODEL_PORT, method: req.method, path: req.url, headers }, (ur) => {
     res.writeHead(ur.statusCode || 502, { ...ur.headers, ...CORS });
     ur.pipe(res);
@@ -440,7 +494,8 @@ function proxy(req, res) {
   });
   // a closed client (stop button, ctrl-c in an agent) aborts the generation in llama-server
   res.on('close', () => { if (!res.writableFinished) up.destroy(); });
-  req.pipe(up);
+  if (body) up.end(body);
+  else req.pipe(up);
 }
 
 const server = http.createServer(async (req, res) => {

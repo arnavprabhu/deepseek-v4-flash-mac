@@ -56,3 +56,10 @@ Re-run `scripts/download-model.sh` if it is missing; it downloads both.
 
 Another `llama-server` (for example `scripts/serve.sh`) or another console already uses port 8080. Stop it, or start the
 console with `MODEL_PORT=8081 npm run dev`. The console page itself uses port 3141 (`PORT=...` to change).
+
+## "reasoning_effort must be an integer in [1, 100] or low/high/max" (HTTP 500)
+
+The model's chat template only accepts an effort of 1-100 or `low`/`high`/`max`; OpenAI-style clients also send
+`minimal`, `medium`, `xhigh` or `none`. Point the client at the console (`http://127.0.0.1:3141/v1`): it translates
+those (`minimal` 25, `medium` 60, `xhigh` 90, `none` 1). When talking to `llama-server` directly on port 8080, send a
+number or `low`/`high`/`max`.
