@@ -32,7 +32,7 @@ Quality versus the CPU reference implementation: KLD 0.0028, same top-p 97.45%, 
 - Apple Silicon Mac. **Tested only on an M5 Pro with 64 GB.** Other chips and sizes are untested.
 - 64 GB RAM recommended (48 GB or less is probably impractical).
 - About 250 GB free on a fast **internal** SSD (experts are read from disk while you generate).
-- macOS with Xcode command line tools, plus `cmake`, `ninja`, and the Hugging Face `hf` CLI.
+- macOS with Xcode command line tools, plus `cmake`, `ninja`, the Hugging Face `hf` CLI, and Node.js 20+ for the console.
 
 ## Quick start
 
@@ -41,23 +41,40 @@ git clone https://github.com/arnavprabhu/deepseek-v4-flash-mac.git
 cd deepseek-v4-flash-mac
 
 xcode-select --install            # once, if you have not already
-brew install cmake ninja
+brew install cmake ninja node
 pip install -U huggingface_hub    # provides the `hf` command
 
 scripts/setup.sh                  # builds the pinned runtime, fetches the optional seed profile
 scripts/download-model.sh         # ~250 GB: model shards + Engram sidecar
-scripts/serve.sh                  # OpenAI-compatible server on http://127.0.0.1:8080
+npm run dev                       # the console: http://127.0.0.1:3141
 ```
 
-The first request is slow while the page cache and arena warm up. Then:
+Open **http://127.0.0.1:3141**, pick a context size and reasoning level, press **START MODEL**, and chat. The console
+is the main way to run the model: it starts and stops it, serves it to other apps, and shows what it is doing.
+
+![DS41 console](assets/console.png)
+
+- **Model:** context (8K-128K), reasoning effort (off, 25-100), n-gram speculation, and the opt-in GPU-resident decode.
+  It uses the same tested settings as `scripts/serve.sh` (RAM preset, recommended sampling).
+- **Chat:** streaming replies with the thinking in a collapsible block; each reply shows time to first token, tokens
+  in/out and speed.
+- **Stats:** live decode and prefill speed, expert-cache hit rate, SSD reads per token, a 3-minute chart, a progress bar
+  with time left for long prompts, memory, swap and GPU use.
+- **API:** while the model runs, the console serves it to any OpenAI or Anthropic client (any model name, any key):
+
+| API | Base URL |
+|---|---|
+| OpenAI | `http://127.0.0.1:3141/v1` |
+| Anthropic | `http://127.0.0.1:3141` |
 
 ```bash
-curl http://127.0.0.1:8080/v1/chat/completions \
+curl http://127.0.0.1:3141/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"messages":[{"role":"user","content":"Explain mixture-of-experts in two sentences."}],"max_tokens":512}'
 ```
 
-Terminal chat instead: `scripts/chat.sh`. Reproduce the benchmark: `scripts/bench.sh`.
+The first request after a start is slow while the page cache and arena warm up. Without a browser: `scripts/serve.sh`
+(headless server on port 8080) or `scripts/chat.sh` (terminal chat). Reproduce the benchmark: `scripts/bench.sh`.
 
 ## Tested vs untested
 

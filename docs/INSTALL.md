@@ -51,7 +51,7 @@ IQ1_M and IQ2_XS variants exist, but only IQ2_XXS has been tested.
 ## 4. Run
 
 ```bash
-scripts/serve.sh
+npm run dev          # console on http://127.0.0.1:3141 (needs Node.js 20+: brew install node)
 ```
 
-See [USAGE.md](USAGE.md). Useful overrides: `DS41_MODEL_DIR`, `DS41_PRESET`, `DS41_ARENA_MIB`, `DS41_CTX`, `DS41_PORT` (see [CONFIGURATION.md](CONFIGURATION.md)).
+Press **START MODEL** in the page. Headless alternative: `scripts/serve.sh`. See [USAGE.md](USAGE.md). Useful overrides: `DS41_MODEL_DIR`, `DS41_PRESET`, `DS41_ARENA_MIB`, `DS41_CTX`, `DS41_PORT` (see [CONFIGURATION.md](CONFIGURATION.md)).

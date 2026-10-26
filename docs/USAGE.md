@@ -1,6 +1,39 @@
 # Usage
 
-## Server
+## Console (recommended)
+
+```bash
+npm run dev                           # http://127.0.0.1:3141
+PORT=4000 npm run dev                 # another console port
+MODEL_PORT=8081 npm run dev           # another port for the engine itself
+DS41_ARENA_MIB=30720 npm run dev      # preset overrides work as with serve.sh
+```
+
+Open the page, choose the context size, reasoning effort and options, press **START MODEL**. **STOP MODEL** (or Ctrl+C
+in the terminal running the console) shuts the model down. The console:
+
+- launches the model through `scripts/engine.sh` with the RAM preset and the same flags as `serve.sh`;
+- serves the OpenAI API at `http://127.0.0.1:3141/v1` and the Anthropic Messages API at `http://127.0.0.1:3141`
+  (`/v1/messages`, `/v1/messages/count_tokens`); while it runs the engine also answers on port 8080;
+- shows live decode/prefill speed, expert-cache hit rate, SSD MiB per token, long-prompt progress, memory, swap and GPU
+  use, and the engine log (bottom bar);
+- refuses to start when the engine port is taken or another console already runs the model (`.model.lock`).
+
+Anthropic clients (Python SDK, Claude Code and other agents):
+
+```bash
+ANTHROPIC_BASE_URL=http://127.0.0.1:3141 ANTHROPIC_API_KEY=local claude
+```
+
+```python
+from anthropic import Anthropic
+client = Anthropic(base_url="http://127.0.0.1:3141", api_key="local")
+msg = client.messages.create(model="deepseek-v4.1-flash", max_tokens=1024,
+                             messages=[{"role": "user", "content": "Summarize what an MoE is."}])
+print(msg.content[-1].text)
+```
+
+## Server without the console
 
 ```bash
 scripts/serve.sh                      # 127.0.0.1:8080, 128K context
@@ -13,10 +46,10 @@ The script picks an arena size from your RAM (see [CONFIGURATION.md](CONFIGURATI
 
 ## OpenAI-compatible API
 
-`curl`:
+`curl` (console port; use 8080 with `serve.sh`):
 
 ```bash
-curl http://127.0.0.1:8080/v1/chat/completions \
+curl http://127.0.0.1:3141/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
         "messages": [{"role": "user", "content": "Write a haiku about SSDs."}],
@@ -30,7 +63,7 @@ Python with the OpenAI client:
 ```python
 from openai import OpenAI
 
-client = OpenAI(base_url="http://127.0.0.1:8080/v1", api_key="none")
+client = OpenAI(base_url="http://127.0.0.1:3141/v1", api_key="none")   # or :8080/v1 with serve.sh
 resp = client.chat.completions.create(
     model="deepseek-v4.1-flash",   # the server serves one model; the name is not checked
     messages=[{"role": "user", "content": "Summarize what an MoE is."}],
@@ -51,7 +84,7 @@ Extra arguments go to `llama-cli`.
 
 ## Recommended parameters
 
-`serve.sh` and `chat.sh` already pass these:
+The console, `serve.sh` and `chat.sh` already pass these:
 
 | Setting | Value | Why |
 |---|---|---|

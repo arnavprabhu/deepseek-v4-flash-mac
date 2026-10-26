@@ -51,3 +51,8 @@ Re-run `scripts/download-model.sh` if it is missing; it downloads both.
 - Thermal throttling on long runs.
 - Different chip, RAM size or SSD speed (only M5 Pro / 64 GB was tested).
 - Missing seed profile (cold arena) or an arena that is too small.
+
+## Console says the port is in use
+
+Another `llama-server` (for example `scripts/serve.sh`) or another console already uses port 8080. Stop it, or start the
+console with `MODEL_PORT=8081 npm run dev`. The console page itself uses port 3141 (`PORT=...` to change).

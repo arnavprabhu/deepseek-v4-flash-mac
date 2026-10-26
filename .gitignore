@@ -8,3 +8,4 @@ data/
 # Misc
 .DS_Store
 *.log
+.model.lock/

@@ -1,0 +1,14 @@
+{
+  "name": "deepseek-v4-flash-mac",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DeepSeek-V4.1-Flash on a Mac: console to start/stop the model, chat, OpenAI + Anthropic API, live stats",
+  "type": "module",
+  "scripts": {
+    "dev": "node console/server/index.mjs",
+    "start": "node console/server/index.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

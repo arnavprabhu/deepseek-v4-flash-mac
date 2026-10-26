@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DS41 CONSOLE</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand"><span class="mark">DS41</span><span class="name">DEEPSEEK V4.1 FLASH<span class="dim">IQ2_XXS / METAL / LOCAL</span></span></div>
+    <div class="status" id="status"><span class="dot"></span><span id="status-text">OFFLINE</span><span id="status-time" class="dim"></span></div>
+  </header>
+
+  <main class="grid">
+    <aside class="side">
+      <section class="panel">
+        <h2><span>01</span>MODEL</h2>
+        <div class="field">
+          <label>CONTEXT</label>
+          <div class="seg" id="ctx">
+            <button data-v="8192">8K</button><button data-v="32768">32K</button><button data-v="65536">64K</button><button data-v="131072" class="on">128K</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>REASONING</label>
+          <div class="seg" id="effort">
+            <button data-v="0">OFF</button><button data-v="25">25</button><button data-v="50" class="on">50</button><button data-v="75">75</button><button data-v="100">100</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="check"><input type="checkbox" id="spec" checked><span class="box"></span>N-GRAM SPECULATION</label>
+          <label class="check"><input type="checkbox" id="gpures"><span class="box"></span>GPU-RESIDENT DECODE <span class="dim">(FASTER, MAY SWAP AT 128K)</span></label>
+        </div>
+        <button class="big" id="power">START MODEL</button>
+        <div class="note" id="model-note"></div>
+      </section>
+
+      <section class="panel">
+        <h2><span>02</span>STATS</h2>
+        <div class="kpis">
+          <div class="kpi"><div class="k">DECODE</div><div class="v" id="k-decode">—</div><div class="u" id="k-decode-u">TOK/S</div></div>
+          <div class="kpi"><div class="k">PREFILL</div><div class="v" id="k-prefill">—</div><div class="u" id="k-prefill-u">TOK/S</div></div>
+          <div class="kpi"><div class="k">CACHE HIT</div><div class="v" id="k-hit">—</div><div class="u">% EXPERTS</div></div>
+          <div class="kpi"><div class="k">SSD</div><div class="v" id="k-ssd">—</div><div class="u">MIB / TOK</div></div>
+        </div>
+        <div class="bar" id="prefill-bar" hidden><div class="fill" id="prefill-fill"></div><span id="prefill-text"></span></div>
+        <canvas id="chart" height="110"></canvas>
+        <div class="chart-legend"><span><i class="l-solid"></i>DECODE TOK/S</span><span><i class="l-dash"></i>CACHE HIT %</span><span class="dim">LAST 3 MIN</span></div>
+        <table class="rows">
+          <tr><td>LAST REQUEST</td><td id="r-last">—</td></tr>
+          <tr><td>MODEL RSS</td><td id="r-rss">—</td></tr>
+          <tr><td>FREE MEMORY</td><td id="r-free">—</td></tr>
+          <tr><td>SWAP USED</td><td id="r-swap">—</td></tr>
+          <tr><td>GPU</td><td id="r-gpu">—</td></tr>
+          <tr><td>REQUESTS</td><td id="r-req">—</td></tr>
+          <tr><td>TOKENS IN / OUT</td><td id="r-tok">—</td></tr>
+          <tr><td>SSD READ</td><td id="r-ssdt">—</td></tr>
+        </table>
+      </section>
+
+      <section class="panel">
+        <h2><span>03</span>API</h2>
+        <table class="rows api">
+          <tr><td>OPENAI</td><td><code id="a-openai"></code><button class="copy" data-copy="a-openai">COPY</button></td></tr>
+          <tr><td>ANTHROPIC</td><td><code id="a-anthropic"></code><button class="copy" data-copy="a-anthropic">COPY</button></td></tr>
+          <tr><td>MODEL</td><td><code id="a-model"></code><button class="copy" data-copy="a-model">COPY</button></td></tr>
+          <tr><td>API KEY</td><td><code>ANY</code></td></tr>
+        </table>
+        <details class="curl">
+          <summary>EXAMPLE REQUESTS</summary>
+          <pre id="a-curl"></pre>
+        </details>
+      </section>
+    </aside>
+
+    <section class="chat">
+      <div class="chat-head">
+        <h2><span>04</span>CHAT</h2>
+        <div class="chat-tools">
+          <input id="system" placeholder="SYSTEM PROMPT (OPTIONAL)" spellcheck="false">
+          <label class="mini">MAX<input id="maxtok" type="number" value="4096" min="16" step="256"></label>
+          <button id="clear">CLEAR</button>
+        </div>
+      </div>
+      <div class="msgs" id="msgs">
+        <div class="empty" id="empty">
+          <div class="empty-big">NO CLOUD.<br>THE WHOLE MODEL, ON THIS MAC.</div>
+          <div class="dim">START THE MODEL, THEN TYPE BELOW. ENTER SENDS, SHIFT+ENTER IS A NEW LINE.</div>
+        </div>
+      </div>
+      <form class="composer" id="composer">
+        <textarea id="input" rows="3" placeholder="MESSAGE" spellcheck="false"></textarea>
+        <button type="submit" class="send" id="send">SEND</button>
+      </form>
+    </section>
+  </main>
+
+  <section class="log" id="log-panel">
+    <div class="log-head" id="log-toggle"><span><span class="num">05</span>LOG</span><span class="dim" id="log-last"></span><span class="arrow">▲</span></div>
+    <pre class="log-body" id="log"></pre>
+  </section>
+
+  <script src="/app.js" type="module"></script>
+</body>
+</html>

@@ -87,3 +87,14 @@ All values below are the tested set (M5 Pro, 64 GB). They live in [`configs/pres
 Rule of thumb used for the untested tiers: arena about 55-60% of RAM, total footprint under roughly 85-90% of RAM. Strata measured instability with 90-100 GB arenas on a 128 GB machine, so avoid huge arenas. Below ~48 GB RAM the setup is probably impractical.
 
 The 64 GB sweep (tg2048, single runs): 20 GiB LRU 12.22 tok/s; 28 LRU 14.16; 32 LRU 14.91; 36 LRU 15.55; 32 LFU 15.82; **36 LFU 16.28 (46.6 GB RSS)**; 40 LFU 16.35 but prefill dropped to 194 tok/s and 1.5 GB of swap appeared. 36 GiB with LFU was kept.
+
+## Console
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `PORT` | 3141 | Console port (page + OpenAI/Anthropic API proxy). |
+| `HOST` | 127.0.0.1 | Console bind address. |
+| `MODEL_PORT` | 8080 | Port of the engine (`llama-server`) the console starts. |
+| `DS41_PRESET`, `DS41_ARENA_MIB`, `DS41_MODEL_DIR`, `DS41_MODEL`, `DS41_BIN_DIR`, `DS41_RUNTIME_DIR` | | Same meaning as for the scripts. |
+
+Context size, reasoning effort, speculation and GPU-resident decode are chosen in the page.
