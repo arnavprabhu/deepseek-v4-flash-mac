@@ -17,15 +17,15 @@ Measured on one machine: **Apple M5 Pro (6P + 12E CPU, 20-core GPU), 64 GB unifi
 
 | Metric | First working runtime | Now |
 |---|---|---|
-| Prefill | 5.7 tok/s (pp512) | **~350 tok/s** (pp8192, 348-349 in two runs; pp4096 218-254, page-cache dependent) |
-| Decode | 3.3 tok/s | **~16.5 tok/s** (tg128, 16.3-16.6); ~17 tok/s on real text and 22-24 tok/s on copy/edit prompts with the server's n-gram speculation |
+| Prefill | 5.7 tok/s (pp512) | **~367 tok/s** (pp8192, 365-369 in two runs; pp4096 ~262) |
+| Decode | 3.3 tok/s | **~16 tok/s** chat with the recommended sampling, ~17.6 tok/s on copy/edit prompts with the server's n-gram speculation (up to 25 on pure copies); ~18 tok/s with the opt-in GPU-resident decode (see below) |
 | 4 parallel sequences | n/a | 26.3 tok/s aggregate |
-| 119K-token prompt (128K context) | n/a | **4.0 min** to first token (495 tok/s), needle retrieved, no swap (v13; 9.45 min on v11) |
+| 119K-token prompt (128K context) | n/a | **3.76 min** to first token (529 tok/s), needle retrieved, no swap (v14; 4.0 min on v13, 9.45 min on v11) |
 | 9.1K-token prompt, first token | n/a | 57.8 s cold, **0.61 s** with the prefix cached |
 | Short prompts (100-1000 tokens), warm server | n/a | 30-45% faster first token (experts reused from the arena) |
-| Memory | | expert arena sized automatically from context length (~38 GiB at 8K, ~26 GiB at 128K) |
+| Memory | | expert arena sized automatically from context length (~38 GiB at 8K, ~28 GiB at 128K; the 128K KV cache itself is only ~0.6 GiB, most of the context cost is attention scratch memory) |
 
-Quality versus the CPU reference implementation: KLD 0.0028, same top-p 97.45%, perplexity within 0.07%, 24/24 task outputs (numeric gates re-run on the current build, v13). A new 8K-context check finds decode rows after a long prompt at KLD ~0.01 versus the CPU reference (prompt logits match to ~3e-6); this predates v13 and is being investigated, see [docs/BENCHMARKS.md](docs/BENCHMARKS.md#quality). The 2-bit quantization itself sits at KLD ~0.17 versus the original model; that is the cost of IQ2_XXS, chosen by ISTA-DASLab. Details in [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
+Quality versus the CPU reference implementation: KLD 0.0028, same top-p 97.45%, perplexity within 0.07%, 24/24 task outputs (numeric gates re-run on the current build, v14). Decode is now bit-reproducible: the same prompt gives the same logits on every run. An 8K-context check finds decode rows after a long prompt at KLD ~0.01 versus the CPU reference (prompt logits match to ~3e-6); this predates v13 and is being investigated, see [docs/BENCHMARKS.md](docs/BENCHMARKS.md#quality). The 2-bit quantization itself sits at KLD ~0.17 versus the original model; that is the cost of IQ2_XXS, chosen by ISTA-DASLab. Details in [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
 
 ## Requirements
 
@@ -95,4 +95,4 @@ No Strata or Splash code is in the runtime except the seed profile data file, wh
 
 Scripts and docs in this repo: MIT, see [LICENSE](LICENSE). The runtime fork keeps llama.cpp's MIT license. The model is under its own license; check the [model page](https://huggingface.co/ISTA-DASLab/DeepSeek-V4.1-Flash-1017-GSQ-RCO-GGUF).
 
-Runtime source: [arnavprabhu/ds41-metal-runtime](https://github.com/arnavprabhu/ds41-metal-runtime), branch `ista-metal`, pinned at commit `7fec31c78` (baseline-v13).
+Runtime source: [arnavprabhu/ds41-metal-runtime](https://github.com/arnavprabhu/ds41-metal-runtime), branch `ista-metal`, pinned at commit `2511af313` (baseline-v14).

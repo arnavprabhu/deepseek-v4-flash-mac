@@ -47,6 +47,15 @@ All values below are the tested set (M5 Pro, 64 GB). They live in [`configs/pres
 | `LLAMA_DSV41_STAGE_WIDEN` | 1 | Prefill staging reads whole 16 KiB pages through an uncached file handle (keeps the page cache free, aligned reads) (v13). |
 | `LLAMA_DSV41_STAGE_UNION` | 2 | Prefill staging reads only the experts predicted for the next layer (previous ubatch's selection) and fetches the few it missed; 1 = also use the current layer's selection, 0 = full tensors (v13). |
 | `LLAMA_DSV41_MOE_OVERLAP_NT` | 1 | Extend the decode miss overlap to 2-16 token batches (speculative-decoding verification) (v13). |
+| `LLAMA_DSV41_ENGRAM_AHEAD` | 1 | Gather the next batch's Engram rows on a background thread while the GPU computes the current one (v14). |
+| `LLAMA_DSV41_STAGE_BLIT` | 2 | Copy experts already in the arena into the prefill staging buffers with a GPU blit (2 = on a second Metal queue, 1 = main queue) instead of CPU memcpy (v14). |
+| `LLAMA_DSV41_DEPTH` | 2 | Long-context attention: one mask / index list per top-k source instead of per layer; 2 = sparse attention reads the index list directly, 1 = shared masks only (v14). |
+| `GGML_METAL_DS41_MVGLU`, `GGML_METAL_DS41_MVMOE`, `GGML_METAL_DS41_RTOPK` | 1 | Decode fusions: expert gate+up+SwiGLU, down projection+weighted combine, router scores+top-k, one dispatch each (v14). |
+| `GGML_METAL_DET` | 1 | Deterministic top-k order (ascending index instead of atomic order): decode gives identical logits on every run (v14). `GGML_METAL_DET_TOPK` / `GGML_METAL_DET_FUSE` switch the two parts separately. |
+| `LLAMA_DSV41_MOE_GPURES` | 0 | Opt-in GPU-resident decode: the arena's slot maps live on the GPU and only layers with a cache miss stop for the CPU (needs `LLAMA_DSV41_MOE_PREDICT=0`). ~18 tok/s tg128 and ~10% faster chat decode, but a 119K prompt grew swap by 100-235 MB on 64 GB and the first tokens after a prompt hit the cache less. |
+| `LLAMA_DSV41_GPU_SAMPLE` | 0 | Opt-in: sample on the GPU with the Gumbel-max trick (exact for temperature 1 with no truncation and no speculation), only the token id is read back. |
+| `GGML_METAL_DS41_PFUSE`, `GGML_METAL_DS41_MMID` | 0 | Prefill fusions (in-place RoPE, fused MoE reduce, fused expert gate+up). +2-4% prefill but not bit-exact, so off by default. |
+| `LLAMA_DSV41_DECODE_PROF`, `GGML_METAL_SPIN_US` | 0 | Diagnostics: per-token host/GPU time split (`decode-prof:` lines); busy-poll command-buffer completion for N us before blocking. |
 | `LLAMA_DSV41_MOE_TOKSTATS`, `LLAMA_DSV41_STAGE_STATS`, `LLAMA_DSV41_ENGRAM_STATS` | 0 | Diagnostics: per-token arena hit/miss lines, staging union statistics, Engram gather timing. |
 | `LLAMA_DSV41_ENGRAM_FILE` | (auto) | Path to the Engram sidecar if it is not next to shard 1. |
 

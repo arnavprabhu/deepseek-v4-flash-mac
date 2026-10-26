@@ -17,11 +17,30 @@ All numbers: **Apple M5 Pro (6P+12E CPU, 20-core GPU), 64 GB, macOS 27, internal
 | Decode miss overlap, DS41 mat-vec kernels, LFU-decay eviction, profile seeding, 36 GiB arena (baseline-v8) | 252 (pp4096), ~215-222 (pp8192) | 16.3 (tg2048) | |
 | v11 decode kernels, sparse attention v2, auto arena, speculation (baseline-v11) | ~283 (pp4096) | 15.9-16.1 (tg128) | |
 | Long-prompt layer skip (baseline-v12) | 302 (pp32768, was 222) | ~16 (tg128) | 128K TTFT 9.45 -> 5.6 min |
-| Engram pread, arena seeding, aligned + predicted-union staging, verify-batch overlap (baseline-v13) | **348-349 (pp8192)** | **16.3-16.6 (tg128)** | 128K TTFT **4.0 min**; current |
+| Engram pread, arena seeding, aligned + predicted-union staging, verify-batch overlap (baseline-v13) | 348-349 (pp8192) | 16.3-16.6 (tg128) | 128K TTFT 4.0 min |
+| Engram look-ahead, staging blits, depth index lists, decode fusions, deterministic top-k (baseline-v14) | **365-369 (pp8192)** | 15.9-16.5 (tg128), 16.1 chat, 17.6 copy/edit | 128K TTFT **3.76 min**; bit-reproducible decode; current |
 
 Intermediate rows were measured on earlier builds and different test shapes (pp512, pp4096, pp8192), so only compare rows with the same test length. The 272.4 figure was measured at that milestone against a 207.6 control in the same session (+31%); later single runs of the current build at pp8192 land at ~215-222, so run-to-run and session-to-session variation is substantial.
 
-## Current build in detail (baseline-v13, runtime 7fec31c78)
+## Current build in detail (baseline-v14, runtime 2511af313)
+
+Same binary, same session: v13 settings, v14 settings, and v14 plus the opt-in GPU-resident decode:
+
+| Test | v13 | v14 | v14 + GPU-resident decode |
+|---|---|---|---|
+| pp8192 (2 runs) | 358 / 350 tok/s | **365 / 369** | 369 / 369 |
+| pp4096 (2 runs) | 256 / 215 | 262 / 263 | 265 / 264 |
+| tg128 (2 runs) | 16.7 / 16.6 | 15.9 / 16.5 | **18.0 / 17.9** |
+| Chat decode, recommended sampling, 1009 tokens | 15.1 | 16.1 | **17.7** |
+| Copy/edit prompts with n-gram speculation | 17.4 | **17.6** | 17.3 |
+| First 8 decode tokens after a 4K prompt (arena hit) | 72% | 72% | 62% |
+| 119K-token prompt, time to first token | 4.01 min (v13 run) | **3.76 min**, needle retrieved, no swap | 3.54 min, needle retrieved, swap +235 MB |
+
+What changed in v14: the Engram rows of the next 4096-token batch are gathered while the GPU works on the current one; experts already in the arena are copied into the prefill staging buffers by the GPU; long-context attention builds its masks and index lists once per top-k source instead of once per layer; three decode fusions; and the top-k kernel now writes its result in a fixed order, which makes decode bit-reproducible (v13 runs of the same prompt could differ by KLD ~0.002). The GPU-resident decode is the fastest decode so far but used some swap on the 128K test, so it is opt-in (`LLAMA_DSV41_MOE_GPURES=1`, `LLAMA_DSV41_MOE_PREDICT=0`).
+
+Measured along the way: a CPU-GPU round trip leaves the GPU idle ~0.2 ms, ~40 times per token; a faster expert matrix kernel could gain at most ~1.29x, below the 1.3x bar, so it was not pursued.
+
+### Previous build (baseline-v13, runtime 7fec31c78)
 
 Same binary, same session, v12 settings vs v13 settings:
 
@@ -63,7 +82,7 @@ Tried and dropped: long-prompt layer skip (no A/B gain), wider expert GEMM tiles
 
 Compared with the CPU reference implementation of the same quantized model: KLD 0.0028, same top-p 97.45%, perplexity within 0.07%, 24/24 task outputs (numeric gates re-run on v10 and v11: greedy goldens byte-identical, KL gate pass). The quantization itself is about KLD 0.17 versus the original unquantized model (ISTA-DASLab's choice for IQ2_XXS). Some optimizations in the history are bit-exact, others are within a numeric tolerance; the final gates were of the numeric kind.
 
-New in v13: an 8K-context check (8192-token prompt plus 64 teacher-forced decode steps). The prompt logits match the CPU reference to KLD ~3e-6, but the decode steps sit at KLD ~0.01 (top-1 agreement ~94%) on v12 and v13 alike, and repeated identical runs of the GPU build differ by up to KLD ~0.002 at those steps. Turning off the decode kernels, the sparse prefill attention, staging, or using 512-token batches does not remove it. This predates v13 and is under investigation; every v13 change was checked to leave the 8K prompt logits bit-identical.
+New in v13: an 8K-context check (8192-token prompt plus 64 teacher-forced decode steps). The prompt logits match the CPU reference to KLD ~3e-6, but the decode steps sit at KLD ~0.01 (top-1 agreement ~94%) on v12 and v13 alike, and repeated identical runs of the GPU build differ by up to KLD ~0.002 at those steps. Turning off the decode kernels, the sparse prefill attention, staging, or using 512-token batches does not remove it. This predates v13 and is under investigation; every v13 and v14 default change was checked to leave the 8K prompt logits bit-identical. Since v14 the run-to-run part is gone: repeated runs give identical logits.
 
 ## Methodology
 

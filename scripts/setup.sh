@@ -7,7 +7,7 @@ set -euo pipefail
 
 RUNTIME_URL="https://github.com/arnavprabhu/ds41-metal-runtime"
 RUNTIME_BRANCH="ista-metal"
-RUNTIME_COMMIT="7fec31c783894af2bd7a0505c25f05d83adc6cbd"
+RUNTIME_COMMIT="2511af313bd6bb6fedd4e1f11df01eb8f8eb79d7"
 PROFILE_URL="https://raw.githubusercontent.com/Niko1221/Strata/8183c6b67162340c09b67360860177c577a65f2e/data/dsv41/profile-2.00.bin"
 
 say "Checking system"

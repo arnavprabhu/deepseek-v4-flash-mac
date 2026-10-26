@@ -18,7 +18,7 @@ External and network drives are a bad fit: routed experts are streamed from disk
 scripts/setup.sh
 ```
 
-The script checks macOS, arm64, RAM and disk, clones [arnavprabhu/ds41-metal-runtime](https://github.com/arnavprabhu/ds41-metal-runtime) into `./runtime` at the pinned commit `7fec31c783894af2bd7a0505c25f05d83adc6cbd` (branch `ista-metal`), builds it, and downloads the optional seed profile into `./data`.
+The script checks macOS, arm64, RAM and disk, clones [arnavprabhu/ds41-metal-runtime](https://github.com/arnavprabhu/ds41-metal-runtime) into `./runtime` at the pinned commit `2511af313bd6bb6fedd4e1f11df01eb8f8eb79d7` (branch `ista-metal`), builds it, and downloads the optional seed profile into `./data`.
 
 Manual equivalent:
 
